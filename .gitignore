@@ -1,0 +1,11 @@
+# Java Compiled Files
+*.class
+*.jar
+*.war
+
+# OS & Editor Files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.log

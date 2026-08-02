@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration Portal</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #f8fafc; min-height: 100vh; padding: 40px 20px; }
+        .container { max-width: 650px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 2.2rem; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; margin-top: 8px; font-size: 0.95rem; }
+        .card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 30px; margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group.full-width { grid-column: span 2; }
+        label { font-size: 0.85rem; color: #cbd5e1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { background: #0f172a; border: 1px solid #334155; padding: 12px 16px; border-radius: 8px; color: #fff; font-size: 1rem; outline: none; transition: 0.3s; }
+        input:focus, select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); }
+        button { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; width: 100%; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4); }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; min-height: 24px; }
+        
+        /* Dynamic Receipt Card */
+        .receipt-card { display: none; background: rgba(15, 23, 42, 0.85); border: 1px solid #4ade80; border-radius: 12px; padding: 25px; margin-top: 20px; }
+        .receipt-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; color: #4ade80; }
+        .receipt-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #334155; }
+        .receipt-label { color: #94a3b8; font-weight: 500; }
+        .receipt-val { color: #fff; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🎓 Student Registration Portal</h1>
+        <p>Microservice Powered by Docker Compose</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card">
+        <form id="regForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="name" placeholder="e.g. Yash Sharma" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="e.g. yash@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number</label>
+                    <input type="tel" id="contact" placeholder="e.g. 9876543210" required>
+                </div>
+                <div class="form-group">
+                    <label>Qualification</label>
+                    <select id="qualification" required>
+                        <option value="">Select Qualification</option>
+                        <option value="B.Tech / B.E.">B.Tech / B.E.</option>
+                        <option value="BCA / MCA">BCA / MCA</option>
+                        <option value="B.Sc / M.Sc">B.Sc / M.Sc</option>
+                        <option value="Diploma">Diploma</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group full-width" style="margin-top: 15px;">
+                <button type="submit">Submit Registration</button>
+            </div>
+        </form>
+        <div id="status"></div>
+
+        <!-- Personal Submitted Details Card -->
+        <div id="receipt" class="receipt-card">
+            <div class="receipt-header">
+                <h3>✅ Registration Submitted</h3>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Name:</span>
+                <span class="receipt-val" id="rName"></span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Email:</span>
+                <span class="receipt-val" id="rEmail"></span>
+            </div>
+            <div class="receipt-row">
+                <span class="receipt-label">Contact:</span>
+                <span class="receipt-val" id="rContact"></span>
+            </div>
+            <div class="receipt-row" style="border:none;">
+                <span class="receipt-label">Qualification:</span>
+                <span class="receipt-val" id="rQual" style="color: #38bdf8;"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://' + window.location.hostname + ':8080';
+
+    document.getElementById('regForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('status');
+        const receipt = document.getElementById('receipt');
+        
+        status.style.color = '#38bdf8';
+        status.innerText = 'Saving details to Database...';
+        receipt.style.display = 'none';
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const contact = document.getElementById('contact').value;
+        const qualification = document.getElementById('qualification').value;
+
+        const body = `name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&contact=${encodeURIComponent(contact)}&qualification=${encodeURIComponent(qualification)}`;
+
+        try {
+            const res = await fetch(`${API_BASE}/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            });
+            const msg = await res.text();
+            
+            if (res.ok) {
+                status.innerText = '';
+                
+                // Populate Only Current User's Data
+                document.getElementById('rName').innerText = name;
+                document.getElementById('rEmail').innerText = email;
+                document.getElementById('rContact').innerText = contact;
+                document.getElementById('rQual').innerText = qualification;
+                
+                receipt.style.display = 'block';
+                document.getElementById('regForm').reset();
+            } else {
+                status.style.color = '#ef4444';
+                status.innerText = '❌ ' + msg;
+            }
+        } catch (err) {
+            status.style.color = '#ef4444';
+            status.innerText = '❌ Error connecting to server!';
+        }
+    });
+</script>
+
+</body>
+</html>
